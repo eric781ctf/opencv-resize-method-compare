@@ -2,7 +2,7 @@ import os
 import cv2
 import re
 from services.algorithm import analyze_unaligned
-from services.chart import plot_rgb_bar_chart
+from services.chart import plot_vector_metric_bar_chart, plot_scalar_metric_bar_chart
 import json
 
 # ========== 主流程：讀取多個圖片進行分析 ==========
@@ -14,8 +14,6 @@ def main():
             img_path_data[scale_type][method] = []
             img_path_data[scale_type][method].extend(os.listdir(f'./images/resize/{scale_type}/{method}'))
 
-    print('==============================================================')
-    print(img_path_data)
     original_img_path = './images/original/original-1.jpg'
     original_img = cv2.imread(original_img_path)
     if original_img is None:
@@ -79,8 +77,6 @@ def main():
                             continue
                         for metric_key in metric_mapping:
                             if metric_key in metric_name:
-                                print(f"scale_type: {scale_type},scale: {scale}, method: {method}, metric_name:{metric_name}")
-                                print(value)
                                 metric_mapping[metric_key][scale][method] = value
 
     for metric in metric_mapping:
@@ -90,13 +86,33 @@ def main():
                     if metric in data:
                         metric_mapping[metric][scale]['original'] = value
                         break
-                        
-    print('================== 單一檢查 ========================')
-    print(metric_mapping['Mean RGB']['2x'])
+    
     for metric in metric_mapping:
         if metric == 'Mean RGB':
             for scale in metric_mapping[metric]:
-                plot_rgb_bar_chart(metric_mapping[metric][scale], scale, f'./analysis/{scale}_{metric}.png')
-
+                plot_vector_metric_bar_chart(
+                    vector_dict=metric_mapping[metric][scale],
+                    scale=scale,
+                    labels=['R', 'G', 'B'],
+                    title_prefix=metric,
+                    save_path=f'analysis/{scale}_{metric}.png'
+                )
+        elif metric == 'Mean LAB':
+            for scale in metric_mapping[metric]:
+                plot_vector_metric_bar_chart(
+                        vector_dict=metric_mapping[metric][scale],
+                        scale=scale,
+                        labels=['L', 'A', 'B'],
+                        title_prefix=metric,
+                        save_path=f'analysis/{scale}_{metric}.png'
+                )
+        else:
+            for scale in metric_mapping[metric]:
+                plot_scalar_metric_bar_chart(
+                    vector_dict=metric_mapping[metric][scale],
+                    scale=scale,
+                    metric_name=metric,
+                    save_path=f'analysis/{scale}_{metric}.png'
+                )
 if __name__ == "__main__":
     main()
