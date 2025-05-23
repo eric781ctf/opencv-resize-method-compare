@@ -1,0 +1,1 @@
+# OpenCV-resize-method-compare
