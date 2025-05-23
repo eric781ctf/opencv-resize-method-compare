@@ -1,0 +1,29 @@
+# Python cache & metadata
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+*.log
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Virtual environment folders
+venv/
+env/
+.venv/
+ENV/
+
+# IDE / Editor files
+.vscode/
+.idea/
+
+# Others
+*.bak
