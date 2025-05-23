@@ -1,51 +1,54 @@
 import cv2
 import numpy as np
-from skimage.metrics import structural_similarity as ssim
-from skimage.metrics import peak_signal_noise_ratio as psnr
+from skimage.measure import shannon_entropy
+import matplotlib.pyplot as plt
+import os
 
-# === 指標 1：MSE ===
-def compute_mse(img1, img2):
-    return np.mean((img1.astype("float") - img2.astype("float")) ** 2)
+# === 平均像素值 (RGB) ===
+def mean_rgb(img):
+    return np.mean(img, axis=(0, 1))
 
-# === 指標 2：MAE ===
-def compute_mae(img1, img2):
-    return np.mean(np.abs(img1.astype("float") - img2.astype("float")))
+# === LAB 色彩空間平均值 ===
+def mean_lab(img):
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    return np.mean(lab, axis=(0, 1))
 
-# === 指標 3：SSIM ===
-def compute_ssim(img1, img2):
-    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-    return ssim(gray1, gray2)
+# === 銳利度（Laplacian 變異數） ===
+def sharpness_laplacian(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    lap = cv2.Laplacian(gray, cv2.CV_64F)
+    return lap.var()
 
-# === 指標 4：PSNR ===
-def compute_psnr(img1, img2):
-    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-    return psnr(gray1, gray2)
+# === 紋理強度（Sobel 邊緣總量） ===
+def texture_sobel(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    sobel = cv2.Sobel(gray, cv2.CV_64F, 1, 1, ksize=3)
+    return np.mean(np.abs(sobel))
 
-# === 指標 5：色差 ΔE（使用 LAB 色彩空間） ===
-def compute_delta_e(img1, img2):
-    lab1 = cv2.cvtColor(img1, cv2.COLOR_BGR2LAB).astype("float32")
-    lab2 = cv2.cvtColor(img2, cv2.COLOR_BGR2LAB).astype("float32")
-    delta = np.linalg.norm(lab1 - lab2, axis=2)
-    return np.mean(delta)
+# === 資訊熵（Shannon Entropy） ===
+def image_entropy(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return shannon_entropy(gray)
 
-# === 指標 6：邊緣圖 MSE ===
-def compute_gradient_mse(img1, img2):
-    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-    grad1 = cv2.Sobel(gray1, cv2.CV_64F, 1, 1, ksize=3)
-    grad2 = cv2.Sobel(gray2, cv2.CV_64F, 1, 1, ksize=3)
-    return np.mean((grad1 - grad2) ** 2)
 
-# === 主分析函式 ===
-def analyze_all_metrics(img1, img2):
-    results = {
-        "MSE": compute_mse(img1, img2),
-        "MAE": compute_mae(img1, img2),
-        "SSIM": compute_ssim(img1, img2),
-        "PSNR": compute_psnr(img1, img2),
-        "DeltaE (LAB)": compute_delta_e(img1, img2),
-        "Edge MSE": compute_gradient_mse(img1, img2)
+
+# === 主函式 ===
+def analyze_unaligned(original_img, resized_img):
+    if original_img is None or resized_img is None:
+        raise FileNotFoundError("無法讀取圖片")
+
+    metrics = {
+        "Mean RGB (orig)": mean_rgb(original_img),
+        "Mean RGB (resized)": mean_rgb(resized_img),
+        "Mean LAB (orig)": mean_lab(original_img),
+        "Mean LAB (resized)": mean_lab(resized_img),
+        "Sharpness (orig)": sharpness_laplacian(original_img),
+        "Sharpness (resized)": sharpness_laplacian(resized_img),
+        "Texture (orig)": texture_sobel(original_img),
+        "Texture (resized)": texture_sobel(resized_img),
+        "Entropy (orig)": image_entropy(original_img),
+        "Entropy (resized)": image_entropy(resized_img),
     }
-    return results
+
+    return metrics
+
